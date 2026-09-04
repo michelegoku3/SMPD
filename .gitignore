@@ -1,0 +1,59 @@
+# ==========================================
+# SMPD Repository - Root .gitignore
+# Same layout as AetherDLL (C++ / CMake / Ninja / VS2026)
+# ==========================================
+
+# --- Build trees (CMake presets use out/build/<preset>) ---
+out/
+build/
+cmake-build-*/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# --- Packaging output (build.cmd / CI release job) ---
+release/
+
+# --- General Compiled Files (build results, never commit) ---
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.gch
+*.pch
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+*.exe
+
+# --- Local Steam-side artifacts (never in the repo) ---
+migo3.txt
+smpd_mirror.txt
+*.bad
+*.tmp
+*.src
+
+# --- Editors & IDEs (VS Code, Visual Studio, CLion) ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+
+# --- OS System Files ---
+.DS_Store
+Thumbs.db
+Desktop.ini

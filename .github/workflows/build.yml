@@ -1,0 +1,83 @@
+name: Build and Release SMPD
+
+on:
+  push:
+    tags:
+      # Release streams (same convention as AetherDLL):
+      #   smpd-0.1.0 / smpd-v0.1.0 -> stable winmm.dll release
+      # Testing stream (prefix t): tsmpd-*. At most one testing release at
+      # a time; only surfaced when "Enable test updates" is ON.
+      - 'smpd-*'
+      - 'tsmpd-*'
+
+jobs:
+  release-smpd:
+    name: Build and Release SMPD
+    if: startsWith(github.ref_name, 'smpd-') || startsWith(github.ref_name, 'tsmpd-')
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Extract SMPD Version From Tag
+        id: version
+        shell: pwsh
+        run: |
+          # Strip the optional testing prefix (t) and the 'v', e.g. tsmpd-v0.1.0 -> 0.1.0
+          $version = "${{ github.ref_name }}" -replace '^t?smpd-v?', ''
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Sync SMPD Version
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $cmakePath = "CMakeLists.txt"
+          $cmake = Get-Content $cmakePath -Raw
+          $cmake = $cmake -replace 'project\(SMPD LANGUAGES C CXX RC VERSION [0-9]+(\.[0-9]+)*\)', "project(SMPD LANGUAGES C CXX RC VERSION $version)"
+          Set-Content $cmakePath $cmake
+
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Configure SMPD
+        run: cmake --preset x64-Release
+
+      - name: Build SMPD
+        run: cmake --build --preset x64-Release
+
+      - name: Package SMPD Zip
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $source = "out/build/x64-Release/out/Release"
+          if (!(Test-Path "$source/winmm.dll")) {
+            throw "winmm.dll output not found in: $source"
+          }
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Compress-Archive -Path "$source/winmm.dll" -DestinationPath "release/SMPD-$version.zip" -Force
+          @{
+            component = "SMPD"
+            version = $version
+            tag = "${{ github.ref_name }}"
+            published_at = (Get-Date).ToUniversalTime().ToString("o")
+          } | ConvertTo-Json | Set-Content "release/latest-smpd.json"
+
+      - name: Publish SMPD Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: SMPD ${{ steps.version.outputs.version }}
+          body: Automated SMPD release compiled on GitHub Actions.
+          draft: false
+          prerelease: false
+          files: |
+            release/SMPD-${{ steps.version.outputs.version }}.zip
+            release/latest-smpd.json
