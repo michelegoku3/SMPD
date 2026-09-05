@@ -58,6 +58,35 @@ std::string ReadMirrorFile(const std::string& dir) {
 // NOTE: LumaCore is intentionally NOT loaded here:
 // LC's own dwmapi.dll/xinput1_4.dll already do that. Less interference.
 
+// The pattern CI polls Steam on the "0 * * * *" UTC cron (minute 0 of every
+// hour). Append a countdown to the next check computed from the user's own
+// clock, so it is correct in every timezone (UTC math, local display).
+void AppendNextCheckCountdown(std::string& body) {
+    FILETIME ftNow{};
+    GetSystemTimeAsFileTime(&ftNow);
+    ULARGE_INTEGER now{};
+    now.LowPart = ftNow.dwLowDateTime;
+    now.HighPart = ftNow.dwHighDateTime;
+
+    SYSTEMTIME utc{};
+    GetSystemTime(&utc);
+    const int nowMinOfDay = utc.wHour * 60 + utc.wMinute;
+    const int remainMin = ((nowMinOfDay / 60) + 1) * 60 - nowMinOfDay;  // 1..60
+
+    ULARGE_INTEGER next = now;
+    next.QuadPart += (ULONGLONG)remainMin * 60ULL * 10000000ULL;
+    const FILETIME ftNext{next.LowPart, next.HighPart};
+    SYSTEMTIME utcNext{}, localNext{};
+    FileTimeToSystemTime(&ftNext, &utcNext);
+    SystemTimeToTzSpecificLocalTime(nullptr, &utcNext, &localNext);
+
+    char line[256] = {};
+    _snprintf_s(line, sizeof(line), _TRUNCATE,
+                "\r\nNext pattern check in %dh %02dm (at %02d:%02d local time).",
+                remainMin / 60, remainMin % 60, localNext.wHour, localNext.wMinute);
+    body += line;
+}
+
 // Shown only when this run actually wrote pattern files. LumaCore reads the
 // cache at startup, so files fetched now apply on the NEXT launch — hence
 // the restart notice.
@@ -88,6 +117,7 @@ void ShowUpdatePopup(const std::vector<smpd::bridge::PatternChange>& changes) {
                 "once migo3 publishes the new patterns.";
     }
     body += "\r\n\r\nPlease restart Steam so the new patterns take effect.";
+    AppendNextCheckCountdown(body);
     MessageBoxA(nullptr, body.c_str(), "SMPD -- Pattern Bridge",
                 MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND);
 }

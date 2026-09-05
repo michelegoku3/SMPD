@@ -20,9 +20,11 @@ New Steam patterns installed:
 - steamclientipc (a1b2c3d4e5f6) updated from ost to migo3
 
 Please restart Steam so the new patterns take effect.
+
+Next pattern check in 1h 24m (at 14:00 local time).
 ```
 
-Plain launches with everything up to date stay silent. The restart notice is required because LumaCore reads the cache at startup, so freshly fetched files apply on the next launch.
+Plain launches with everything up to date stay silent. The restart notice is required because LumaCore reads the cache at startup, so freshly fetched files apply on the next launch. The countdown line follows the CI cron (`0 * * * *` UTC): it is computed from the user's own clock and shown in local time.
 
 When a table is served by the OST fallback, the popup and the log additionally warn that cloud error notifications are normal (the fallback does not publish the cloud patterns) and will disappear once migo3 publishes the new patterns. Upgrades from a previously cached source are reported as transitions (e.g. `updated from ost to migo3`); each written file stores a `<sha>.toml.src` sidecar so the next run knows the previous source.
 
