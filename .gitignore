@@ -39,6 +39,7 @@ release/
 # --- Local Steam-side artifacts (never in the repo) ---
 migo3.txt
 smpd_mirror.txt
+smpd_config.txt
 *.bad
 *.tmp
 *.src

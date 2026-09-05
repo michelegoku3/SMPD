@@ -85,9 +85,10 @@ struct Level {
     std::vector<Candidate> endpoints;
 };
 
-// Custom mirror = Level 0, then the registry in order.
+// Custom mirror = Level 0, then the registry in order. The OST entry is
+// skipped unless explicitly opted in (its tables lack the cloud patterns).
 std::vector<Level> BuildPlan(Kind kind, const std::string& sha,
-                             const std::string& userMirror) {
+                             const std::string& userMirror, bool enableOst) {
     std::vector<Level> plan;
     if (!userMirror.empty()) {
         Level level;
@@ -96,6 +97,7 @@ std::vector<Level> BuildPlan(Kind kind, const std::string& sha,
         plan.push_back(std::move(level));
     }
     for (const Source& src : DefaultSources()) {
+        if (!enableOst && IsOstSource(src)) continue;
         const auto mirrors = src.UrlsFor(kind, sha);
         if (mirrors.empty()) continue;
         Level level;
@@ -128,10 +130,10 @@ std::string TryLevel(const Level& level, std::string& outBody, int timeoutSec) {
 
 bool Download(Kind kind, const std::string& sha, const std::string& outPath,
               const std::string& userMirrorTemplate,
-              std::string* outSource, int timeoutSec) {
+              std::string* outSource, int timeoutSec, bool enableOst) {
     log::Info("Resolving '%s/%s'.", KindName(kind), sha.c_str());
 
-    const std::vector<Level> plan = BuildPlan(kind, sha, userMirrorTemplate);
+    const std::vector<Level> plan = BuildPlan(kind, sha, userMirrorTemplate, enableOst);
     if (plan.empty()) {
         log::Warn("No sources configured for '%s/%s'.", KindName(kind), sha.c_str());
         return false;
@@ -154,13 +156,17 @@ bool Download(Kind kind, const std::string& sha, const std::string& outPath,
     }
 
     log::Warn("All sources failed for '%s/%s'.", KindName(kind), sha.c_str());
+    if (!enableOst) {
+        log::Info("OST fallback is disabled by config (smpd_config.txt: ost=1 to opt in).");
+    }
     return false;
 }
 
 bool Download(std::string_view kindName, const std::string& sha, const std::string& outPath,
               const std::string& userMirrorTemplate,
-              std::string* outSource, int timeoutSec) {
-    return Download(KindFromName(kindName), sha, outPath, userMirrorTemplate, outSource, timeoutSec);
+              std::string* outSource, int timeoutSec, bool enableOst) {
+    return Download(KindFromName(kindName), sha, outPath, userMirrorTemplate, outSource,
+                    timeoutSec, enableOst);
 }
 
 }  // namespace smpd::downloader

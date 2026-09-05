@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "core/BridgeCache.h"
+#include "core/BridgeConfig.h"
 #include "core/Logger.h"
 
 #pragma comment(lib, "shlwapi.lib")
@@ -37,23 +38,7 @@ namespace {
 
 volatile LONG s_started = 0;
 std::string g_steamDir;
-std::string g_mirror;
-
-// smpd_mirror.txt next to winmm.dll (optional):
-// https://my-server/pattern/{subdir}/{sha}.toml
-std::string ReadMirrorFile(const std::string& dir) {
-    char buf[2048] = {};
-    std::string p = dir + "\\smpd_mirror.txt";
-    FILE* f = nullptr;
-    fopen_s(&f, p.c_str(), "r");
-    if (!f) return {};
-    size_t n = fread(buf, 1, sizeof(buf) - 1, f);
-    fclose(f);
-    std::string s(buf, n);
-    while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || s.back() == ' ' || s.back() == '\t'))
-        s.pop_back();
-    return s;
-}
+smpd::bridge::BridgeConfig g_config;
 
 // NOTE: LumaCore is intentionally NOT loaded here:
 // LC's own dwmapi.dll/xinput1_4.dll already do that. Less interference.
@@ -124,12 +109,15 @@ void ShowUpdatePopup(const std::vector<smpd::bridge::PatternChange>& changes) {
 
 DWORD WINAPI BridgeThread(LPVOID) {
     smpd::log::Init(g_steamDir);
-    smpd::log::Info("SMPD bridge start. steamDir=%s mirror=%s",
-                    g_steamDir.c_str(), g_mirror.empty() ? "<default>" : g_mirror.c_str());
+    if (smpd::bridge::EnsureDefaultConfigExists(g_steamDir))
+        smpd::log::Info("Created default smpd_config.txt (OST fallback disabled).");
+    smpd::log::Info("SMPD bridge start. steamDir=%s mirror=%s ost=%s",
+                    g_steamDir.c_str(), g_config.mirror.empty() ? "<default>" : g_config.mirror.c_str(),
+                    g_config.useOst ? "enabled" : "disabled");
     smpd::log::Info("EXE=%s", []{ char e[MAX_PATH]={}; GetModuleFileNameA(nullptr,e,MAX_PATH); return std::string(e); }().c_str());
 
     const std::vector<smpd::bridge::PatternChange> changes =
-        smpd::bridge::EnsureCache(g_steamDir, g_mirror);
+        smpd::bridge::EnsureCache(g_steamDir, g_config.mirror, g_config.useOst);
 
     smpd::log::Info("SMPD bridge done (%zu changed).", changes.size());
 
@@ -165,7 +153,7 @@ BOOL APIENTRY DllMain(HMODULE instance, DWORD reason, LPVOID /*reserved*/) {
             std::string probe = g_steamDir + "\\steamclient64.dll";
             if (GetFileAttributesA(probe.c_str()) == INVALID_FILE_ATTRIBUTES) return TRUE;
 
-            g_mirror = ReadMirrorFile(g_steamDir);
+            g_config = smpd::bridge::ReadBridgeConfig(g_steamDir);
 
             HANDLE h = CreateThread(nullptr, 0, BridgeThread, nullptr, 0, nullptr);
             if (h) CloseHandle(h);

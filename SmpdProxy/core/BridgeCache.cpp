@@ -125,7 +125,7 @@ bool SameFileContent(const std::string& a, const std::string& b) {
 // could serve this build.
 std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::string& sha,
                                        const std::string& tomlPath,
-                                       const std::string& userMirror) {
+                                       const std::string& userMirror, bool enableOst) {
     namespace fs = std::filesystem;
     std::error_code ec;
     fs::create_directories(fs::path(tomlPath).parent_path(), ec);
@@ -134,7 +134,8 @@ std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::s
     if (!FileExists(tomlPath)) {
         log::Info("No cached pattern for %s; downloading...", kindName.c_str());
         std::string src;
-        if (!downloader::Download(kindName, sha, tomlPath, userMirror, &src, 12)) return std::nullopt;
+        if (!downloader::Download(kindName, sha, tomlPath, userMirror, &src, 12, enableOst))
+            return std::nullopt;
         // Never poison the cache with error pages served as HTTP 200:
         // drop the file right away when it holds no valid entries.
         if (CountEntries(kindName, tomlPath) == 0) {
@@ -154,7 +155,8 @@ std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::s
         DeleteFileA(srcPath.c_str());  // stale provenance dies with the file
         log::Warn("Quarantined corrupt %s cache.", kindName.c_str());
         std::string src;
-        if (!downloader::Download(kindName, sha, tomlPath, userMirror, &src, 12)) return std::nullopt;
+        if (!downloader::Download(kindName, sha, tomlPath, userMirror, &src, 12, enableOst))
+            return std::nullopt;
         if (CountEntries(kindName, tomlPath) == 0) {
             DeleteFileA(tomlPath.c_str());
             log::Warn("Downloaded %s has 0 valid entries; cache removed.", kindName.c_str());
@@ -165,11 +167,32 @@ std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::s
         return PatternChange{kindName, sha, ShortSourceName(src), "downloaded", {}};
     }
 
+    if (!enableOst && ShortSourceName(ReadProvenance(srcPath)) == "ost") {
+        // Cache previously served by the OST fallback while it is now
+        // disabled: quarantine it (.bad) and re-fetch from the safe sources.
+        // OST tables lack the cloud patterns, which can leave Steam and
+        // LumaCore disagreeing about saves.
+        MoveFileExA(tomlPath.c_str(), (tomlPath + ".bad").c_str(), MOVEFILE_REPLACE_EXISTING);
+        DeleteFileA(srcPath.c_str());  // stale provenance dies with the file
+        log::Warn("Quarantined OST-sourced %s cache (OST fallback disabled).", kindName.c_str());
+        std::string src;
+        if (!downloader::Download(kindName, sha, tomlPath, userMirror, &src, 12, enableOst))
+            return std::nullopt;
+        if (CountEntries(kindName, tomlPath) == 0) {
+            DeleteFileA(tomlPath.c_str());
+            log::Warn("Downloaded %s has 0 valid entries; cache removed.", kindName.c_str());
+            return std::nullopt;
+        }
+        log::Info("Reinstalled %s from '%s'.", kindName.c_str(), src.c_str());
+        WriteProvenance(srcPath, src);
+        return PatternChange{kindName, sha, ShortSourceName(src), "downloaded", {"ost"}};
+    }
+
     // Upgrade probe: never overwrite the cache with a smaller table.
     const std::string candidate = tomlPath + ".tmp";
     std::string fetched;
     if (!downloader::Download(kindName, sha, candidate, userMirror, &fetched,
-                              kUpgradeProbeTimeoutSec)) {
+                              kUpgradeProbeTimeoutSec, enableOst)) {
         DeleteFileA(candidate.c_str());
         log::Info("No upstream for %s; keeping cache (%zu entries).",
                   kindName.c_str(), cached);
@@ -199,7 +222,8 @@ std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::s
 }  // namespace
 
 std::vector<PatternChange> EnsureCache(const std::string& steamDir,
-                                       const std::string& userMirror) {
+                                       const std::string& userMirror,
+                                       bool enableOst) {
     std::vector<PatternChange> changes;
     const std::string clientDll = steamDir + "\\steamclient64.dll";
     const std::string uiDll = steamDir + "\\steamui.dll";
@@ -214,14 +238,15 @@ std::vector<PatternChange> EnsureCache(const std::string& steamDir,
 
     if (!clientSha.empty()) {
         // steamclient plus the IPC spec (same SHA as LumaCore IpcSpecLoader).
-        if (auto c = EnsureOne("steamclient", clientSha, base + "\\" + clientSha + ".toml", userMirror))
+        if (auto c = EnsureOne("steamclient", clientSha, base + "\\" + clientSha + ".toml", userMirror,
+                               enableOst))
             changes.push_back(*c);
         if (auto c = EnsureOne("steamclientipc", clientSha,
-                               base + "\\steamclientipc\\" + clientSha + ".toml", userMirror))
+                               base + "\\steamclientipc\\" + clientSha + ".toml", userMirror, enableOst))
             changes.push_back(*c);
     }
     if (!uiSha.empty() && uiSha != clientSha) {
-        if (auto c = EnsureOne("steamui", uiSha, base + "\\" + uiSha + ".toml", userMirror))
+        if (auto c = EnsureOne("steamui", uiSha, base + "\\" + uiSha + ".toml", userMirror, enableOst))
             changes.push_back(*c);
     }
 

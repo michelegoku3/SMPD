@@ -10,6 +10,7 @@ project(SmpdProxy LANGUAGES CXX ASM_MASM)
 add_library(SmpdProxy SHARED
     core/dllmain.cpp
     core/BridgeCache.cpp
+    core/BridgeConfig.cpp
     core/Logger.cpp
     network/RuntimeHttp.cpp
     utils/Hasher.cpp

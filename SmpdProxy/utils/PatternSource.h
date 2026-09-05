@@ -66,4 +66,11 @@ struct Source {
 
 const std::vector<Source>& DefaultSources();
 
+// OST registry id ("opensteamtool" / OpenSteam001/steam-monitor). Its tables
+// do not include the cloud patterns, so it is opt-in only (see BridgeConfig).
+inline bool IsOstSource(const Source& src) {
+    const std::string_view id = src.id != nullptr ? src.id : "";
+    return id == "opensteamtool";
+}
+
 }  // namespace smpd::downloader

@@ -14,6 +14,10 @@
 // no change record, so plain launches stay silent.
 // Each written file gets a "<sha>.toml.src" sidecar holding the fetch label
 // (e.g. "migo3:raw"), so the next run knows which source served the cache.
+// The OST fallback ("ost") is opt-in via enableOst (default false): when
+// false, OST entries are never fetched and any cached file previously served
+// by OST is quarantined to ".bad" and re-fetched from the safe sources, since
+// OST tables lack the cloud patterns.
 // ---------------------------------------------------------------------------
 
 namespace smpd::bridge {
@@ -32,6 +36,7 @@ struct PatternChange {
 // Ensures all tables. Returns the tables written during this run;
 // empty when everything was already installed and up to date.
 std::vector<PatternChange> EnsureCache(const std::string& steamDir,
-                                       const std::string& userMirror);
+                                       const std::string& userMirror,
+                                       bool enableOst = false);
 
 }  // namespace smpd::bridge
