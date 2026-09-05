@@ -1,6 +1,6 @@
 # ==========================================
 # SMPD Repository - Root .gitignore
-# Same layout as AetherDLL (C++ / CMake / Ninja / VS2026)
+# C++ / CMake / Ninja / VS2026 layout
 # ==========================================
 
 # --- Build trees (CMake presets use out/build/<preset>) ---

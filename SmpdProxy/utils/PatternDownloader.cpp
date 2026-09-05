@@ -85,7 +85,7 @@ struct Level {
     std::vector<Candidate> endpoints;
 };
 
-// Same policy as Aether: custom mirror = Level 0, then the registry in order.
+// Custom mirror = Level 0, then the registry in order.
 std::vector<Level> BuildPlan(Kind kind, const std::string& sha,
                              const std::string& userMirror) {
     std::vector<Level> plan;

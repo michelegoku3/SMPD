@@ -1,7 +1,7 @@
 #pragma once
 
 // ============================================================================
-// framework.h - shared Windows setup header (same role as AetherDLL/common).
+// framework.h - shared Windows setup header.
 // ============================================================================
 
 #ifndef WIN32_LEAN_AND_MEAN

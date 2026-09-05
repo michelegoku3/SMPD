@@ -3,7 +3,7 @@ name: Build and Release SMPD
 on:
   push:
     tags:
-      # Release streams (same convention as AetherDLL):
+      # Release streams:
       #   smpd-0.1.0 / smpd-v0.1.0 -> stable winmm.dll release
       # Testing stream (prefix t): tsmpd-*. At most one testing release at
       # a time; only surfaced when "Enable test updates" is ON.

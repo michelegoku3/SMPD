@@ -7,7 +7,6 @@
 
 // ---------------------------------------------------------------------------
 // PatternDownloader — HTTPS fetch + atomic write.
-// Mirrors AetherDLL/AetherCore/utils/PatternDownloader.h.
 // Difference: no global state; the custom mirror is passed as a parameter.
 // ---------------------------------------------------------------------------
 namespace smpd::downloader {

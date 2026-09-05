@@ -4,7 +4,6 @@
 
 // ---------------------------------------------------------------------------
 // Hasher — file SHA-256 via BCrypt.
-// Mirrors AetherDLL/AetherCore/utils/Hasher.cpp (same procedure).
 // ---------------------------------------------------------------------------
 
 namespace smpd::hasher {

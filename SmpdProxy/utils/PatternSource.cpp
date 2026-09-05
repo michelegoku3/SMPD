@@ -50,7 +50,7 @@ std::vector<MirrorUrl> Source::UrlsFor(Kind kind, const std::string& sha) const 
 
 const std::vector<Source>& DefaultSources() {
     // >>> PUT YOUR OWN SOURCE FIRST (index 0 = highest priority) <<<
-    // Same rule as AetherDLL: position = priority.
+    // Position = priority.
     static const std::array<Source, 3> kSources = {{
         {
             /* id        */ "migo3",

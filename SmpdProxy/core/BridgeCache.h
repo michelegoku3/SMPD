@@ -4,8 +4,7 @@
 #include <vector>
 
 // ---------------------------------------------------------------------------
-// BridgeCache — fills <Steam>\lumacore\pattern\ the same way
-// AetherDLL/AetherCore/utils/PatternEngine.cpp does, writing the layout
+// BridgeCache — fills <Steam>\lumacore\pattern\, writing the layout
 // LumaCore expects (cache-first):
 //   <Steam>\lumacore\pattern\<sha>.toml                (steamclient/ui)
 //   <Steam>\lumacore\pattern\steamclientipc\<sha>.toml (IPC spec)

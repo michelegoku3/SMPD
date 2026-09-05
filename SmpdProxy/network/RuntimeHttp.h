@@ -4,8 +4,7 @@
 #include <string_view>
 
 // ---------------------------------------------------------------------------
-// RuntimeHttp — GET minimale via WinHTTP (estratto da
-// AetherDLL/AetherCore/network/RuntimeHttp.cpp, GetUnchecked only).
+// RuntimeHttp — GET minimale via WinHTTP (GetUnchecked only).
 // No allowlist: the bridge must be able to reach custom mirrors.
 // ---------------------------------------------------------------------------
 

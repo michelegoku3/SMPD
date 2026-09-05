@@ -1,5 +1,4 @@
 # SMPD - Steam Multi Pattern Downloader (winmm.dll proxy)
-# Same procedure as AetherDLL:
 #   cmake --preset x64-Release
 #   cmake --build --preset x64-Release
 # Release x64 only. Dependencies via FetchContent (toml++ only).
@@ -16,12 +15,12 @@ if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-# Static runtime like LumaCore/Aether (avoids a VCRedist dependency and
+# Static runtime (avoids a VCRedist dependency and
 # one class of 0xc000007b caused by a missing CRT on the target).
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-# VERSION — single source of truth (like AetherDLL).
+# VERSION — single source of truth.
 # The number lands inside winmm.dll as VS_VERSION_INFO.
 project(SMPD LANGUAGES C CXX RC VERSION 0.1.0)
 
@@ -36,7 +35,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# --- version resource generator (same as AetherDLL) ---
+# --- version resource generator ---
 set(SMPD_PRODUCT_VERSION "${PROJECT_VERSION}")
 string(REPLACE "." "," SMPD_FILEVERSION_COMMA "${PROJECT_VERSION}.0")
 
@@ -62,7 +61,7 @@ set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
 include(FetchContent)
 
-# toml++ (only used to count/parse TOML like Aether PatternEngine does)
+# toml++ (only used to count/parse TOML)
 FetchContent_Declare(tomlplusplus
     GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
     GIT_TAG v3.4.0)

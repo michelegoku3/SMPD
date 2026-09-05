@@ -120,7 +120,7 @@ bool SameFileContent(const std::string& a, const std::string& b) {
 }
 
 // Downloads to .tmp and adopts the candidate only when it holds at least as
-// many entries as the cache (same rule as Aether). Returns the change record
+// many entries as the cache. Returns the change record
 // when a file was written, nullopt when the cache was kept or no source
 // could serve this build.
 std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::string& sha,
@@ -149,7 +149,7 @@ std::optional<PatternChange> EnsureOne(const std::string& kindName, const std::s
 
     const size_t cached = CountEntries(kindName, tomlPath);
     if (cached == 0) {
-        // Corrupt cache: quarantine it the way Aether does (.bad) and re-fetch.
+        // Corrupt cache: quarantine it (.bad) and re-fetch.
         MoveFileExA(tomlPath.c_str(), (tomlPath + ".bad").c_str(), MOVEFILE_REPLACE_EXISTING);
         DeleteFileA(srcPath.c_str());  // stale provenance dies with the file
         log::Warn("Quarantined corrupt %s cache.", kindName.c_str());
@@ -213,8 +213,7 @@ std::vector<PatternChange> EnsureCache(const std::string& steamDir,
     const std::string base = steamDir + "\\lumacore\\pattern";
 
     if (!clientSha.empty()) {
-        // steamclient plus the IPC spec (same SHA, like Aether IpcSpec and
-        // LumaCore IpcSpecLoader do).
+        // steamclient plus the IPC spec (same SHA as LumaCore IpcSpecLoader).
         if (auto c = EnsureOne("steamclient", clientSha, base + "\\" + clientSha + ".toml", userMirror))
             changes.push_back(*c);
         if (auto c = EnsureOne("steamclientipc", clientSha,

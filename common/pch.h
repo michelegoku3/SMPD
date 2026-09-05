@@ -1,7 +1,7 @@
 #pragma once
 
 // ============================================================================
-// pch.h - shared precompiled header (same role as AetherDLL/common/pch.h).
+// pch.h - shared precompiled header.
 // Include first in every .cpp.
 // ============================================================================
 

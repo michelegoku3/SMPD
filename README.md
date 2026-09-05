@@ -1,6 +1,6 @@
 # SMPD — Steam Multi Pattern Downloader (`winmm.dll` proxy)
 
-External bridge that downloads patterns the same way **AetherDLL** does and writes them in the format **LumaCore** expects. LC's `LumaCore.dll`, `dwmapi.dll` and `xinput1_4.dll` stay untouched.
+External bridge that downloads patterns and writes them in the format **LumaCore** expects. LC's `LumaCore.dll`, `dwmapi.dll` and `xinput1_4.dll` stay untouched.
 
 ## How it knows which patterns are installed
 
@@ -30,12 +30,12 @@ When a table is served by the OST fallback, the popup and the log additionally w
 
 ## Research notes: which DLLs Steam loads from its root
 
-* `dwmapi.dll` + `xinput1_4.dll` — the only two documented names (OST docs, OST releases, LumaCore, AetherInjector, ValvePlug). Owned by LC: do not touch.
+* `dwmapi.dll` + `xinput1_4.dll` — the only two documented names (OST docs, OST releases, LumaCore, ValvePlug). Owned by LC: do not touch.
 * `winmm.dll` — used by LuaTools/LuaLoader as a proxy inside the Steam folder. This is our slot.
 * `version.dll` — bitness trap: the 32-bit launcher imports it too, an x64 `version.dll` kills everything with `0xc000007b`. Discarded.
 * `msimg32.dll` — field-tested: never loaded (no popup/log). Discarded.
 
-## Build (same procedure as AetherDLL)
+## Build
 
 * Release x64 only, `x64-Release` preset (Ninja). Requires MASM (`ml64`, included with the C++ Build Tools).
 * Open the `SMPD` folder in **Visual Studio 2026** (CMake folder open) and build the `x64-Release` preset, or from a prompt:
@@ -56,23 +56,23 @@ out\build\x64-Release\out\Release\winmm.dll
 2. (Optional) `<Steam>\smpd_mirror.txt` holding `https://my-server/pattern/{subdir}/{sha}.toml`.
 3. Start Steam. If patterns changed you get the popup; details are always in `lumacore\smpd_bridge.log`, TOMLs in `lumacore\pattern\` (including `steamclientipc\`).
 
-## How it works (AetherDLL mapping)
+## How it works
 
-| AetherDLL | SMPD |
-|---|---|
-| `AetherCore/utils/PatternSource.cpp` | `SmpdProxy/utils/PatternSource.cpp` — same ordered registry (position = priority). Put your source at index 0 |
-| `AetherCore/network/RuntimeHttp.cpp GetUnchecked` | `SmpdProxy/network/RuntimeHttp.cpp` — same WinHTTP GET, no allowlist |
-| `AetherCore/utils/PatternDownloader.cpp` | `SmpdProxy/utils/PatternDownloader.cpp` — Level 0 custom mirror, then registry; `raw` then `cdn` on transport error only; `404` = skip source; atomic `.tmp + MoveFileEx` writes |
-| `AetherCore/utils/Hasher.cpp` | `SmpdProxy/utils/Hasher.cpp` — same BCrypt SHA-256 |
-| `AetherCore/utils/PatternEngine.cpp LoadModule` | `SmpdProxy/core/BridgeCache.cpp EnsureOne` — missing cache = validated download; corrupt cache = `.bad` + re-fetch; upgrade-only; separate `CountIpcEntries` for `steamclientipc` (`funcHash` schema, not `name/rva`) |
-| `AetherCore/utils/IpcSpec.cpp CachePath` | same client SHA for `steamclientipc\<sha>.toml` |
-| LC/Aether proxy pattern | `SmpdProxy/core/dllmain.cpp` + `winmm.def` + `winmm_stubs.asm` (MASM, 180 names + ordinal 2 from the real export table) + `winmm_forward.cpp` (fills from System32, loop-safe) — bridge on a dedicated thread outside the loader lock, `steam.exe` with nearby `steamclient64.dll` only |
+| Component |
+|---|
+| `SmpdProxy/utils/PatternSource.cpp` — ordered registry (position = priority). Put your source at index 0 |
+| `SmpdProxy/network/RuntimeHttp.cpp` — WinHTTP GET, no allowlist |
+| `SmpdProxy/utils/PatternDownloader.cpp` — Level 0 custom mirror, then registry; `raw` then `cdn` on transport error only; `404` = skip source; atomic `.tmp + MoveFileEx` writes |
+| `SmpdProxy/utils/Hasher.cpp` — BCrypt SHA-256 |
+| `SmpdProxy/core/BridgeCache.cpp EnsureOne` — missing cache = validated download; corrupt cache = `.bad` + re-fetch; upgrade-only; separate `CountIpcEntries` for `steamclientipc` (`funcHash` schema, not `name/rva`) |
+| IPC spec — same client SHA for `steamclientipc\<sha>.toml` |
+| Proxy pattern — `SmpdProxy/core/dllmain.cpp` + `winmm.def` + `winmm_stubs.asm` (MASM, 180 names + ordinal 2 from the real export table) + `winmm_forward.cpp` (fills from System32, loop-safe) — bridge on a dedicated thread outside the loader lock, `steam.exe` with nearby `steamclient64.dll` only |
 
 ## Changing sources
 
-Edit `SmpdProxy/utils/PatternSource.cpp:DefaultSources()` — order = priority, like Aether. Rebuild Release x64 only.
+Edit `SmpdProxy/utils/PatternSource.cpp:DefaultSources()` — order = priority. Rebuild Release x64 only.
 
-## Releases (GitHub Actions, like AetherDLL)
+## Releases (GitHub Actions)
 
 Push a tag and the `Build and Release SMPD` workflow compiles `winmm.dll` on `windows-latest` and publishes `SMPD-<version>.zip` plus a `latest-smpd.json` sidecar:
 

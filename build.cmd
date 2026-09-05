@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================
-REM  SMPD build — same procedure as AetherDLL (Release x64 only)
+REM  SMPD build — Release x64 only
 REM  cmake --preset x64-Release
 REM  cmake --build --preset x64-Release
 REM  Output: out\build\x64-Release\out\Release\winmm.dll

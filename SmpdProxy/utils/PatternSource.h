@@ -2,7 +2,6 @@
 
 // ---------------------------------------------------------------------------
 // PatternSource.h — ordered model of remote pattern sources.
-// Mirrors AetherDLL/AetherCore/utils/PatternSource.h (smpd namespace).
 // Order = priority: index 0 is tried first.
 // To change/weigh your source: edit DefaultSources() in the .cpp.
 // ---------------------------------------------------------------------------
